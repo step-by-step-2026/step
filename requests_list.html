@@ -50,7 +50,7 @@ body { font-family: Arial, sans-serif; background-color:#121212; color:var(--whi
     <table class="requests-table" border="1" style="width:100%; border-collapse: collapse;">
         <thead>
             <tr>
-                <th>رقم الطلب</th>
+                <th>رقم الطلب (مفتاح Firebase)</th>
                 <th>المتقدم</th>
                 <th>الوظيفة</th>
                 <th>الحالة</th>
@@ -164,7 +164,10 @@ function viewFiles(app){
 async function displayRequests() {
     const snapshot = await get(ref(db, 'jobApplications'));
     const data = snapshot.val() || {};
-    currentApplications = Object.entries(data).map(([key, value])=> ({id:key, ...value}));
+    currentApplications = Object.entries(data).flatMap(([parentKey, apps]) =>
+        Object.entries(apps).map(([id, value]) => ({ firebaseKey: id, ...value }))
+    );
+    
     const filtered = filterRequests(currentApplications);
     const tbody = document.getElementById('requestsTableBody');
     const noRequestsMessage = document.getElementById('noRequestsMessage');
@@ -179,7 +182,25 @@ async function displayRequests() {
     filtered.forEach(app=>{
         const tr=document.createElement('tr');
 
+        const tdId = document.createElement('td');
+        tdId.textContent = app.firebaseKey;
+
+        const tdName = document.createElement('td');
+        tdName.textContent = app.fullName;
+
+        const tdRole = document.createElement('td');
+        tdRole.textContent = app.roleKey || app.role;
+
+        const tdStatus = document.createElement('td');
+        tdStatus.innerHTML = getStatusPill(app.status);
+
         const tdActions = document.createElement('td');
+
+        const viewBtn=document.createElement('button');
+        viewBtn.className='btn-sm';
+        viewBtn.style.backgroundColor='var(--blue-royal)';
+        viewBtn.textContent='📂 عرض الملفات';
+        viewBtn.addEventListener('click', ()=>viewFiles(app));
 
         if(app.status==='قيد المراجعة'){
             const acceptBtn=document.createElement('button');
@@ -188,7 +209,7 @@ async function displayRequests() {
             acceptBtn.textContent='✅ قبول';
             acceptBtn.addEventListener('click', async ()=>{
                 if(confirm('هل أنت متأكد من قبول الطلب؟')){
-                    await update(ref(db,'jobApplications/'+app.id),{status:'تم القبول'});
+                    await update(ref(db,'jobApplications/'+parentKey+'/'+app.firebaseKey),{status:'تم القبول'});
                     displayRequests();
                 }
             });
@@ -199,62 +220,18 @@ async function displayRequests() {
             rejectBtn.textContent='❌ رفض';
             rejectBtn.addEventListener('click', async ()=>{
                 if(confirm('هل أنت متأكد من رفض الطلب؟')){
-                    await update(ref(db,'jobApplications/'+app.id),{status:'تم الرفض'});
+                    await update(ref(db,'jobApplications/'+parentKey+'/'+app.firebaseKey),{status:'تم الرفض'});
                     displayRequests();
                 }
             });
 
-            const deleteBtn=document.createElement('button');
-            deleteBtn.className='btn-sm';
-            deleteBtn.style.backgroundColor='#555';
-            deleteBtn.textContent='🗑️ حذف';
-            deleteBtn.addEventListener('click', async ()=>{
-                if(confirm('هل أنت متأكد من حذف الطلب؟')){
-                    await remove(ref(db,'jobApplications/'+app.id));
-                    displayRequests();
-                }
-            });
-
-            const viewBtn=document.createElement('button');
-            viewBtn.className='btn-sm';
-            viewBtn.style.backgroundColor='var(--blue-royal)';
-            viewBtn.textContent='📂 عرض الملفات';
-            viewBtn.addEventListener('click', ()=>viewFiles(app));
-
-            tdActions.append(acceptBtn,rejectBtn,deleteBtn,viewBtn);
+            tdActions.append(acceptBtn, rejectBtn, viewBtn);
 
         } else {
-            const statusSpan = document.createElement('span');
-            statusSpan.innerHTML = getStatusPill(app.status);
-            tdActions.appendChild(statusSpan);
-
-            const deleteBtn=document.createElement('button');
-            deleteBtn.className='btn-sm';
-            deleteBtn.style.backgroundColor='#555';
-            deleteBtn.textContent='🗑️ حذف';
-            deleteBtn.addEventListener('click', async ()=>{
-                if(confirm('هل أنت متأكد من حذف الطلب؟')){
-                    await remove(ref(db,'jobApplications/'+app.id));
-                    displayRequests();
-                }
-            });
-
-            const viewBtn=document.createElement('button');
-            viewBtn.className='btn-sm';
-            viewBtn.style.backgroundColor='var(--blue-royal)';
-            viewBtn.textContent='📂 عرض الملفات';
-            viewBtn.addEventListener('click', ()=>viewFiles(app));
-
-            tdActions.append(deleteBtn,viewBtn);
+            tdActions.append(viewBtn);
         }
 
-        tr.innerHTML=`
-            <td>${app.id}</td>
-            <td>${app.fullName}</td>
-            <td>${app.roleKey || app.role}</td>
-            <td>${getStatusPill(app.status)}</td>
-        `;
-        tr.appendChild(tdActions);
+        tr.append(tdId,tdName,tdRole,tdStatus,tdActions);
         tbody.appendChild(tr);
     });
 }
