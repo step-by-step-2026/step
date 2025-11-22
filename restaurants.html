@@ -79,7 +79,7 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+import { getDatabase, ref, set, get, push } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
 // إعدادات Firebase
 const firebaseConfig = {
@@ -124,22 +124,25 @@ async function loadRestaurants() {
     return Object.keys(restaurants).map(key => ({ code: key, ...restaurants[key] }));
 }
 
-// التعليقات المحلية
-function getComments(placeCode) {
-    const commentsData = JSON.parse(localStorage.getItem('restaurantComments') || '{}');
-    return commentsData[placeCode] || [];
+// تحميل التعليقات من Firebase
+async function getComments(placeCode) {
+    const snapshot = await get(ref(db, `restaurantComments/${placeCode}`));
+    if (!snapshot.exists()) return [];
+    const data = snapshot.val();
+    return Object.values(data);
 }
 
-function saveComment(placeCode, commentObj){
-    const commentsData = JSON.parse(localStorage.getItem('restaurantComments') || '{}');
-    if(!commentsData[placeCode]) commentsData[placeCode]=[];
-    commentsData[placeCode].push(commentObj);
-    localStorage.setItem('restaurantComments', JSON.stringify(commentsData));
+// حفظ تعليق جديد في Firebase
+async function saveComment(placeCode, commentObj){
+    const commentsRef = ref(db, `restaurantComments/${placeCode}`);
+    const newRef = push(commentsRef);
+    await set(newRef, commentObj);
     return true;
 }
 
-function getAverageRating(placeCode) {
-    const comments = getComments(placeCode);
+// حساب متوسط التقييم
+async function getAverageRating(placeCode) {
+    const comments = await getComments(placeCode);
     if(comments.length === 0) return 'غير مُقيّم';
     const totalRating = comments.reduce((sum, c) => sum + parseInt(c.rating || 0), 0);
     const avg = (totalRating / comments.length).toFixed(1);
@@ -151,8 +154,8 @@ function getAverageRating(placeCode) {
 async function renderRestaurants() {
     cardsContainer.innerHTML = '';
     const restaurants = await loadRestaurants();
-    restaurants.forEach(place => {
-        const avgRating = getAverageRating(place.code);
+    for (const place of restaurants) {
+        const avgRating = await getAverageRating(place.code);
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -168,6 +171,7 @@ async function renderRestaurants() {
                 <button class="commentsBtn">التعليقات</button>
             </div>
         `;
+
         const orderBtn = card.querySelector('.order');
         const dirBtn = card.querySelector('.directions');
         const commentsBtn = card.querySelector('.commentsBtn');
@@ -184,7 +188,7 @@ async function renderRestaurants() {
             if(place.gmapsLink) window.open(place.gmapsLink,'_blank');
         });
 
-        commentsBtn.addEventListener('click', () => {
+        commentsBtn.addEventListener('click', async () => {
             currentPlaceCode = place.code;
             commentsModal.style.display='flex';
             commentName.value=''; commentText.value=''; commentRating.value='5';
@@ -192,13 +196,15 @@ async function renderRestaurants() {
         });
 
         cardsContainer.appendChild(card);
-    });
+    }
 }
 
-function renderComments() {
+// عرض التعليقات
+async function renderComments() {
     commentsList.innerHTML='';
-    const comments = getComments(currentPlaceCode);
+    const comments = await getComments(currentPlaceCode);
     if(comments.length===0){ commentsList.innerHTML='<p>لا توجد تعليقات بعد.</p>'; return; }
+
     comments.forEach(c=>{
         const stars = '⭐'.repeat(parseInt(c.rating||0));
         const div = document.createElement('div');
@@ -211,27 +217,30 @@ function renderComments() {
 modalClose.addEventListener('click', ()=>{ orderModal.style.display='none'; });
 commentsClose.addEventListener('click', ()=>{ commentsModal.style.display='none'; });
 
-// إرسال الطلب
+// إرسال الطلب → Firebase
 submitOrder.addEventListener('click', ()=>{
     if(!userName.value || !userPhone.value || !userRequest.value){
         alert('يرجى تعبئة جميع الحقول.');
         return;
     }
-    let locData = null;
+
     function saveOrder(location){
-        const bookings = JSON.parse(localStorage.getItem('restaurantOrders') || '{}');
-        if(!bookings[currentPlaceCode]) bookings[currentPlaceCode]=[];
-        bookings[currentPlaceCode].push({
+        const orderData = {
             name: userName.value.trim(),
             phone: userPhone.value.trim(),
             request: userRequest.value.trim(),
             location: location,
             time: new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
-        });
-        localStorage.setItem('restaurantOrders', JSON.stringify(bookings));
+        };
+
+        const ordersRef = ref(db, `restaurantOrders/${currentPlaceCode}`);
+        const newOrder = push(ordersRef);
+        set(newOrder, orderData);
+
         orderSuccess.style.display='block';
         userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
     }
+
     if(shareLocationOrder.checked && navigator.geolocation){
         submitOrder.disabled = true;
         submitOrder.textContent = 'جاري تحديد الموقع...';
@@ -246,18 +255,20 @@ submitOrder.addEventListener('click', ()=>{
     } else { saveOrder(null); }
 });
 
-// إضافة تعليق
-addCommentBtn.addEventListener('click', ()=>{
+// إضافة تعليق إلى Firebase
+addCommentBtn.addEventListener('click', async ()=>{
     if(!commentName.value || !commentText.value || !commentRating.value){
         alert('يرجى تعبئة الاسم والتقييم والتعليق.');
         return;
     }
-    saveComment(currentPlaceCode, {
+
+    await saveComment(currentPlaceCode, {
         name: commentName.value.trim(),
         comment: commentText.value.trim(),
         rating: commentRating.value,
         time: new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
     });
+
     commentName.value=''; commentText.value=''; commentRating.value='5';
     renderComments();
     renderRestaurants();
