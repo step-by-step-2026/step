@@ -58,7 +58,7 @@ body {background-color: var(--dark-bg); color: var(--text-color); font-family:'S
 <!-- مودل التعليقات -->
 <div id="commentsModal" class="modal-bg">
     <div class="modal-content">
-        <button class="close-modal" id="closeModalBtn">×</button>
+        <button class="close-modal" onclick="closeCommentsModal()">×</button>
         <h3 id="modalAssistantName"></h3>
         <div id="modalCommentsList"></div>
         <input type="text" placeholder="أدخل اسمك..." id="modalCommentName" class="comment-input">
@@ -70,7 +70,7 @@ body {background-color: var(--dark-bg); color: var(--text-color); font-family:'S
             <option value="4">⭐ 4</option>
             <option value="5" selected>⭐ 5</option>
         </select>
-        <button id="submitCommentBtn" class="comment-submit">إرسال التعليق</button>
+        <button onclick="submitModalComment()" class="comment-submit">إرسال التعليق</button>
     </div>
 </div>
 
@@ -96,63 +96,51 @@ const ROLES = {
     COMPANION: {key:"COMPANION", name:"مرافق لذوي الاحتياجات الخاصة"},
     DRIVER: {key:"DRIVER", name:"سائق نقل خاص"}
 };
-
 const keyMap = { GUIDE:'assistants_guides', COMPANION:'assistants_companions', DRIVER:'assistants_drivers' };
 
+// ⭐ الدوال المساعدة
 function renderStars(rating){
     let stars='';
     for(let i=1;i<=5;i++) stars+=i<=rating?'⭐':'☆';
     return stars;
 }
-
 function getMajorityRating(comments){
     if(!comments || comments.length===0) return 5;
     const counts={};
     comments.forEach(c=>counts[c.rating]=(counts[c.rating]||0)+1);
     let max=0, majority=5;
-    for(const r in counts){ if(counts[r]>max){ max=counts[r]; majority=parseInt(r); } }
+    for(const r in counts){ if(counts[r]>max){ max=parseInt(r); max=counts[r]; majority=parseInt(r); } }
     return majority;
 }
 
-// مودال التعليقات
+// المودل
 let currentModalCode = null;
-const commentsModal = document.getElementById('commentsModal');
-const modalAssistantName = document.getElementById('modalAssistantName');
-const modalCommentsList = document.getElementById('modalCommentsList');
-const modalCommentName = document.getElementById('modalCommentName');
-const modalCommentText = document.getElementById('modalCommentText');
-const modalCommentRating = document.getElementById('modalCommentRating');
-const submitCommentBtn = document.getElementById('submitCommentBtn');
-const closeModalBtn = document.getElementById('closeModalBtn');
-
-function openCommentsModal(code, name){
-    currentModalCode = code;
-    modalAssistantName.textContent = name;
+function openCommentsModal(code,name){
+    currentModalCode=code;
+    document.getElementById('modalAssistantName').textContent=name;
     loadModalComments(code);
-    commentsModal.style.display = 'flex';
+    document.getElementById('commentsModal').style.display='flex';
 }
 function closeCommentsModal(){
-    commentsModal.style.display = 'none';
-    currentModalCode = null;
+    document.getElementById('commentsModal').style.display='none';
+    currentModalCode=null;
 }
-closeModalBtn.addEventListener('click', closeCommentsModal);
-
 function loadModalComments(code){
-    modalCommentsList.innerHTML='';
-    const comments = JSON.parse(localStorage.getItem(`comments_${code}`)) || [];
+    const div=document.getElementById('modalCommentsList');
+    div.innerHTML='';
+    let comments = JSON.parse(localStorage.getItem(`comments_${code}`)) || [];
     comments.slice(-20).forEach(c=>{
         const el=document.createElement('div');
         el.className='comment-item';
         el.innerHTML=`<span class="comment-name">${c.name||'زائر'}</span><span class="comment-stars">${'⭐'.repeat(c.rating)}</span><span class="comment-text">${c.text}</span>`;
-        modalCommentsList.appendChild(el);
+        div.appendChild(el);
     });
 }
-
-submitCommentBtn.addEventListener('click', ()=>{
+function submitModalComment(){
     if(!currentModalCode) return;
-    const name = modalCommentName.value.trim() || "زائر";
-    const text = modalCommentText.value.trim();
-    const rating = parseInt(modalCommentRating.value);
+    const name = document.getElementById('modalCommentName').value.trim() || "زائر";
+    const text = document.getElementById('modalCommentText').value.trim();
+    const rating = parseInt(document.getElementById('modalCommentRating').value);
     if(!text) return;
     const comment = {name,text,rating};
     const localKey = `comments_${currentModalCode}`;
@@ -164,23 +152,18 @@ submitCommentBtn.addEventListener('click', ()=>{
     const newRef = push(ref(db, `assistantComments/${currentModalCode}`));
     set(newRef, comment);
 
-    modalCommentName.value='';
-    modalCommentText.value='';
-    modalCommentRating.value='5';
+    document.getElementById('modalCommentName').value='';
+    document.getElementById('modalCommentText').value='';
+    document.getElementById('modalCommentRating').value='5';
     loadModalComments(currentModalCode);
-});
+}
 
 // عرض البطاقات
-async function renderCards(assistantsList, title){
+async function renderCards(assistantsList,title){
     document.getElementById('roleTitleDisplay').textContent = title;
     const grid = document.getElementById('assistantCardsGrid');
     grid.innerHTML='';
-
-    if(assistantsList.length===0){
-        grid.innerHTML='<p style="text-align:center;color:#aaa;">لا يوجد مساعدون متاحون حالياً لهذا الدور.</p>';
-        return;
-    }
-
+    if(assistantsList.length===0){ grid.innerHTML='<p style="text-align:center;color:#aaa;">لا يوجد مساعدون متاحون حالياً لهذا الدور.</p>'; return; }
     assistantsList.forEach(a=>{
         const card = document.createElement('div');
         card.className='assistant-card';
@@ -207,19 +190,31 @@ async function renderCards(assistantsList, title){
             <button class="contact-btn">💬 تواصل الآن</button>
             <button class="comments-btn">💬 التعليقات</button>
         `;
-
-        // إضافة أحداث الأزرار
-        card.querySelector('.comments-btn').addEventListener('click', ()=>openCommentsModal(a.chatCode, a.name));
-        card.querySelector('.contact-btn').addEventListener('click', ()=>window.location.href=`chat_page.html?code=${a.chatCode}&name=`);
-
         grid.appendChild(card);
+    });
+
+    // Event delegation للأزرار
+    grid.addEventListener('click', (e)=>{
+        const card = e.target.closest('.assistant-card');
+        if(!card) return;
+        const code = card.getAttribute('data-id');
+        const name = card.querySelector('h3').textContent;
+
+        if(e.target.classList.contains('comments-btn')){
+            openCommentsModal(code, name);
+        }
+
+        if(e.target.classList.contains('contact-btn')){
+            window.location.href = `chat_page.html?code=${code}&name=${encodeURIComponent(name)}`;
+        }
     });
 }
 
-// جلب البيانات
+// جلب البيانات مع التخزين في localStorage
 document.addEventListener('DOMContentLoaded', async()=>{
     const urlParams = new URLSearchParams(window.location.search);
     const roleKey = urlParams.get('role');
+
     const storageKey = roleKey ? `assistants_${roleKey}` : 'assistants_all';
     let cachedData = JSON.parse(localStorage.getItem(storageKey));
 
