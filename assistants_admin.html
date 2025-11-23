@@ -138,7 +138,7 @@ function renderCards(assistantsList, roleKey) {
     }
 
     assistantsList.forEach(a=>{
-        const assistantId = a.appId; // ⭐ تم تغيير chatCode إلى appId هنا
+        const assistantId = a.appId;
         const card = document.createElement('div');
         card.className='assistant-card';
         // إضافة سمات بيانات للفلترة
@@ -150,10 +150,8 @@ function renderCards(assistantsList, roleKey) {
         else if(a.specialization){ details += `<p><strong>التخصص:</strong> ${a.specialization||''}</p><p><strong>سعر اليوم:</strong> ${a.priceDay} درهم</p><p><strong>سعر الساعة:</strong> ${a.priceHour} درهم</p>`; }
         else if(a.cityPrice){ details += `<p><strong>أجرة المدينة:</strong> ${a.cityPrice} درهم</p><p><strong>أجرة خارج المدينة:</strong> ${a.outCityPrice} درهم</p>`; }
 
-        // استخدام التقييم المخزن في localStorage للعرض الأولي
-        const localStorageRatingKey = `comments_${assistantId}`;
-        const cachedComments = JSON.parse(localStorage.getItem(localStorageRatingKey)) || {};
-        const initialRating = getMajorityRating(cachedComments);
+        // التقييم الأولي (5 نجوم) حتى يتم جلب البيانات من listener
+        const initialRating = 5;
 
         // إنشاء عناصر البطاقة
         card.innerHTML=`
@@ -176,9 +174,6 @@ function renderCards(assistantsList, roleKey) {
         
         const listener = onValue(commentsRef, snap=>{
             const commentsData = snap.val() || {};
-            // تحديث localStorage للتقييم (نخزن قيم التعليقات فقط)
-            localStorage.setItem(localStorageRatingKey, JSON.stringify(Object.values(commentsData)));
-
             const majorityRating = getMajorityRating(commentsData);
             ratingElement.innerHTML = `${renderStars(majorityRating)} (${a.experience} سنوات)`;
         });
@@ -186,9 +181,8 @@ function renderCards(assistantsList, roleKey) {
     });
 }
 
-// دالة جلب وعرض المساعدين مع استراتيجية التخزين المؤقت
+// دالة جلب وعرض المساعدين مباشرة من Firebase
 async function loadAndRenderAssistants(roleKey) {
-    const storageKey = `manager_assistants_${roleKey}`;
     const grid = document.getElementById('assistantCardsGrid');  
 
     if (!roleKey) {
@@ -196,36 +190,27 @@ async function loadAndRenderAssistants(roleKey) {
         return;
     }
 
-    // 1. العرض من التخزين المحلي (للسرعة)
-    const cachedData = JSON.parse(localStorage.getItem(storageKey));
-    if (cachedData && cachedData.length > 0) {
-        allAssistants = cachedData;
-        renderCards(allAssistants, roleKey);
-    } else {
-        grid.innerHTML = '<p style="text-align:center;color:#ccc;">جاري جلب البيانات من الخادم...</p>';
-    }
+    // عرض رسالة التحميل
+    grid.innerHTML = '<p style="text-align:center;color:#ccc;">جاري جلب البيانات من Firebase...</p>';
+    allAssistants = []; // تفريغ القائمة قبل الجلب
 
-    // 2. الجلب من Firebase والتحديث
     try {
         const snapshot = await get(ref(db, ROLES[roleKey]));
-        // التأكد من أن البيانات تأتي ككائن قبل تحويلها إلى مصفوفة
         const rawData = snapshot.val();
         const freshData = rawData ? Object.values(rawData) : [];
 
-        // تحديث البيانات إذا كانت مختلفة عن المخزنة محلياً
-        if (JSON.stringify(freshData) !== JSON.stringify(cachedData)) {
-            localStorage.setItem(storageKey, JSON.stringify(freshData));
-            allAssistants = freshData;
-            renderCards(allAssistants, roleKey);
+        allAssistants = freshData;
+        renderCards(allAssistants, roleKey);
+        
+        // إذا لم يتم العثور على أي بيانات، حتى لو نجح الاتصال
+        if (allAssistants.length === 0) {
+             grid.innerHTML = '<p style="text-align:center;color:#aaa;">لا يوجد مساعدون مسجلون لهذا الدور.</p>';
         }
+
     } catch(error) {
-        console.error("Error fetching fresh data:", error);
-        if (!cachedData) {
-             grid.innerHTML = '<p style="text-align:center;color:var(--red-emergency);">فشل جلب البيانات. الرجاء التحقق من الاتصال أو قاعدة البيانات.</p>';
-        } else {
-            // إذا كان هناك بيانات قديمة مخزنة، لا نعرض رسالة الخطأ على الواجهة
-            console.warn("فشل تحديث البيانات من الخادم، يتم عرض البيانات المخزنة مؤقتاً.");
-        }
+        console.error("Error fetching data from Firebase:", error);
+        // 🚨 إظهار رسالة الخطأ الواضحة هنا
+        grid.innerHTML = '<p style="text-align:center;color:var(--red-emergency);">فشل جلب البيانات. الرجاء التحقق من الاتصال أو قاعدة البيانات (القواعد/المسار).</p>';
     }
 }
 
@@ -246,7 +231,7 @@ window.filterAssistants = function() {
 
 
 // تعريف الدالة للنطاق العام (Window) لتكون قابلة للاستدعاء من onclick
-window.deleteAssistant = async function(roleKey, appId){ // ⭐ تم تغيير chatCode إلى appId
+window.deleteAssistant = async function(roleKey, appId){ 
     if(!confirm('هل أنت متأكد من حذف هذا المساعد؟ سيتم حذف جميع بياناته وتعليقاته.')) return;
     
     try {
@@ -254,9 +239,6 @@ window.deleteAssistant = async function(roleKey, appId){ // ⭐ تم تغيير 
         await remove(ref(db, `${ROLES[roleKey]}/${appId}`));
         // حذف جميع تعليقات المساعد باستخدام appId
         await remove(ref(db, `assistantComments/${appId}`));
-        
-        // إزالة البيانات المخزنة محلياً لهذا المساعد
-        localStorage.removeItem(`comments_${appId}`);
         
         alert("تم حذف المساعد بنجاح.");
         // إعادة تحميل وعرض القائمة لتحديث الواجهة
@@ -268,7 +250,7 @@ window.deleteAssistant = async function(roleKey, appId){ // ⭐ تم تغيير 
 }
 
 // تعريف الدالة للنطاق العام (Window)
-window.openCommentsModal = function(appId){ // ⭐ تم تغيير chatCode إلى appId
+window.openCommentsModal = function(appId){ 
     modalCommentsList.innerHTML='<p style="text-align:center;color:#ccc;">جاري التحميل...</p>';
     modal.style.display='flex';
 
@@ -318,15 +300,6 @@ window.openCommentsModal = function(appId){ // ⭐ تم تغيير chatCode إل
 window.closeCommentsModal = function(){ 
     modal.style.display='none'; 
 }
-
-// ⭐ تشغيل الدالة عند تحميل الصفحة لأول مرة (لجلب بيانات الدور المحدد إذا كان موجوداً)
-document.addEventListener('DOMContentLoaded', () => {
-    // حاول تحميل البيانات إذا كان الدور محدداً مسبقاً (في حال العودة للصفحة)
-    if (roleSelect.value) {
-        currentRoleKey = roleSelect.value;
-        loadAndRenderAssistants(currentRoleKey);
-    }
-});
 
 </script>
 </body>  
