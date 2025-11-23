@@ -98,9 +98,7 @@ const modalCommentsList = document.getElementById('modalCommentsList');
 const ROLES = { GUIDE:'assistants_guides', COMPANION:'assistants_companions', DRIVER:'assistants_drivers' };
 let currentRoleKey = '';
 
-// قائمة لتخزين جميع المساعدين المعروضين حالياً للفلترة
 let allAssistants = [];
-// قائمة للاحتفاظ بـ Firebase Listeners لغرض إيقافها عند تغيير الدور
 let activeListeners = [];
 
 roleSelect.addEventListener('change', () => { 
@@ -120,13 +118,11 @@ function getMajorityRating(comments){
     return major;
 }
 
-// إيقاف جميع الـ listeners النشطة
 function stopListeners() {
     activeListeners.forEach(off);
     activeListeners = [];
 }
 
-// دالة العرض الرئيسية (تستخدم للفلترة وللتحديث)
 function renderCards(assistantsList, roleKey) {
     stopListeners();
     const grid = document.getElementById('assistantCardsGrid');  
@@ -176,7 +172,6 @@ function renderCards(assistantsList, roleKey) {
     });
 }
 
-// دالة جلب وعرض المساعدين مباشرة من Firebase
 async function loadAndRenderAssistants(roleKey) {
     const grid = document.getElementById('assistantCardsGrid');  
 
@@ -206,7 +201,6 @@ async function loadAndRenderAssistants(roleKey) {
     }
 }
 
-// دالة الفلترة (البحث)
 window.filterAssistants = function() {
     const searchTerm = document.getElementById('assistantSearch').value.toLowerCase();
     
@@ -219,40 +213,46 @@ window.filterAssistants = function() {
 }
 
 
-// تعريف دالة الحذف المُحسّنة
+// الدالة المُعدّلة لضمان حذف المساعد بنجاح قبل إظهار رسالة النجاح
 window.deleteAssistant = async function(roleKey, appId){ 
     if(!confirm('هل أنت متأكد من حذف هذا المساعد؟ سيتم حذف جميع بياناته وتعليقاته.')) return;
     
     const assistantPath = `${ROLES[roleKey]}/${appId}`;
     const commentsPath = `assistantComments/${appId}`;
-
+    let successMessage = "تم حذف المساعد وتعليقاته بنجاح.";
+    
+    // 1. محاولة حذف بيانات المساعد الرئيسية (المفتاح appId)
     try {
-        // 1. محاولة حذف المساعد من مسار دوره (باستخدام appId)
         await remove(ref(db, assistantPath));
-
-        // 2. محاولة حذف جميع تعليقات المساعد
-        await remove(ref(db, commentsPath));
         
-        alert("تم حذف المساعد وتعليقاته بنجاح.");
+        // 2. إذا نجح حذف المساعد، حاول حذف التعليقات
+        try {
+            await remove(ref(db, commentsPath));
+        } catch(commentError) {
+            console.warn("تم حذف المساعد بنجاح، لكن فشل حذف التعليقات:", commentError.message);
+            successMessage = "تم حذف المساعد بنجاح، لكن فشل حذف تعليقاته (ربما بسبب مشاكل في الصلاحيات).";
+        }
+        
+        alert(successMessage);
         
         // 3. إعادة تحميل وعرض القائمة لتحديث الواجهة
         loadAndRenderAssistants(roleKey); 
+
     } catch(error) {
         console.error("Error deleting assistant:", error);
         
-        // توفير رسالة خطأ توضح سبب فشل الحذف المحتمل
-        let errorMessage = "فشل الحذف. يرجى التأكد من صلاحيات الأمان (Firebase Rules) للسماح بالحذف في المسار:\n" + assistantPath;
+        // إذا فشل حذف المساعد نفسه، أظهر رسالة خطأ واضحة
+        let errorMessage = "❌ فشل حذف المساعد: يرجى التأكد من صلاحيات الأمان (Firebase Rules) للسماح بالحذف في المسار:\n" + assistantPath;
         if (error.message.includes("permission_denied")) {
-             errorMessage += "\n\nالخطأ يشير إلى رفض الإذن (Permission Denied). يرجى مراجعة قواعد Firebase.";
+             errorMessage += "\n\nالخطأ يشير إلى رفض الإذن (Permission Denied). تأكد أن مسارات الأدوار مفتوحة للكتابة (write: true).";
         } else {
-             errorMessage = "فشل الحذف: " + error.message;
+             errorMessage = "فشل حذف المساعد: " + error.message;
         }
 
         alert(errorMessage);
     }
 }
 
-// تعريف الدالة للنطاق العام (Window)
 window.openCommentsModal = function(appId){ 
     modalCommentsList.innerHTML='<p style="text-align:center;color:#ccc;">جاري التحميل...</p>';
     modal.style.display='flex';
@@ -295,7 +295,6 @@ window.openCommentsModal = function(appId){
     });
 }
 
-// تعريف الدالة للنطاق العام (Window)
 window.closeCommentsModal = function(){ 
     modal.style.display='none'; 
 }
