@@ -1,9 +1,9 @@
-<!DOCTYPE html>  
-<html lang="ar" dir="rtl">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">  
-<title>إدارة المساعدين السياحيين</title>  
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>البحث عن مساعد سياحي</title>
 <style>
 :root {
     --dark-bg: #121212;
@@ -17,274 +17,327 @@
     --yellow-warning: #ffeb3b;
     --text-color: #e0e0e0;
 }
-body {background-color: var(--dark-bg); color: var(--text-color); font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0;}
+body {background-color: var(--dark-bg); color: var(--text-color); font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0; direction:rtl;}
 .header-controls {display:flex; justify-content:flex-end; padding:15px; background-color:#1f1f1f; border-bottom:1px solid var(--border-color);}
 .btn-back {background-color:var(--blue-royal); color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none; font-size:0.9em; transition:background-color 0.3s; border:none; cursor:pointer; margin-left:10px;}
 .btn-back:hover {background-color:#3b5b82;}
-.container{ max-width:1000px; margin:20px auto; }
-.role-select{ margin-bottom:20px; padding:10px; border-radius:6px; border:1px solid var(--blue-royal); background-color:#2a2a2a; color:#fff; }
-.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap:25px; }
-.assistant-card{ background-color:#2a2a2a; border-radius:10px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.4); border:1px solid var(--blue-royal); position:relative; transition:transform 0.3s,border-color 0.3s; }
-.assistant-card:hover{ transform:translateY(-5px); border-color:var(--gold); }
-.card-header{ display:flex; align-items:center; margin-bottom:15px; border-bottom:1px dashed #444; padding-bottom:10px; }
-.profile-img{ width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); margin-left:15px; }
-.card-header h3{ color:var(--gold); margin:0; font-size:1.4em; }
-.card-details p{ margin:8px 0; text-align:right; font-size:0.95em; color:#ccc; }
-.card-details strong{ color:var(--white); }
-.rating{ color: var(--yellow-warning); font-size:1.1em; margin-top:5px; }
-.btn-delete, .btn-comments{ margin-top:10px; padding:10px 16px; border:none; border-radius:6px; background-color:var(--red-emergency); color:#fff; cursor:pointer; font-size:1.1em; width:48%; display:inline-block; }
-.btn-comments { background-color:var(--green-success); margin-left:4%; } /* تعديل بسيط للتنسيق */
-#commentsModal{ display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); justify-content:center; align-items:center; }
-#commentsModal .modal-content{ background-color:#2a2a2a; padding:20px; border-radius:10px; max-width:500px; width:90%; max-height:70%; overflow-y:auto; }
-.comment-item{ margin-bottom:10px; border-bottom:1px dashed #555; padding-bottom:5px; display:flex; justify-content:space-between; align-items:center; }
-.comment-info { flex-grow: 1; margin-right: 10px; }
-.comment-name{ font-weight:bold; color:var(--gold); display:block; }
-.comment-stars{ color:var(--yellow-warning); display:block; margin:2px 0; }
-.comment-text{ display:block; color:#ccc; margin-top:2px; }
-.close-modal{ float:right; cursor:pointer; font-size:1.2em; color:#fff; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 30px; }
+.assistant-card { background-color: #2a2a2a; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border:1px solid var(--blue-royal); position: relative; transition: transform 0.3s,border-color 0.3s; }
+.assistant-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+.card-header { display:flex; align-items:center; margin-bottom:15px; border-bottom:1px dashed #444; padding-bottom:10px; }
+.profile-img { width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); margin-left:15px; }
+.card-header h3 { color:var(--gold); margin:0; font-size:1.4em; }
+.card-details p { margin:8px 0; text-align:right; font-size:0.95em; color:#ccc; }
+.card-details strong { color:var(--white); }
+.rating { color: var(--yellow-warning); font-size:1.1em; margin-top:5px; line-height:1.2em; }
+.contact-btn, .comments-btn { background-color:var(--green-success); color:var(--dark-bg); padding:10px; width:100%; border:none; border-radius:6px; font-weight:bold; margin-top:10px; cursor:pointer; transition: background-color 0.3s; }
+.contact-btn:hover, .comments-btn:hover { background-color:#388e3c; }
+.role-title { text-align:center; color:var(--white); background-color:var(--blue-royal); padding:10px; border-radius:8px; margin-bottom:20px; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }
+.modal-content { background:#1f1f1f; padding:20px; border-radius:10px; width:90%; max-width:500px; max-height:80%; overflow-y:auto; position:relative; }
+.close-modal { position:absolute; top:10px; right:10px; background:var(--red-emergency); color:#fff; border:none; border-radius:50%; width:25px; height:25px; cursor:pointer; }
+.comment-item { margin-bottom:8px; line-height:1.3em; padding-bottom:5px; border-bottom:1px dashed #444; display: flex; justify-content: space-between; align-items: center; }
+.comment-info { flex-grow: 1; }
+.comment-name { font-weight:bold; color:var(--gold); display:block; margin-bottom:2px; }
+.comment-stars { display:block; color:var(--yellow-warning); margin-bottom:2px; }
+.comment-text { display:block; color:#ccc; text-align:right; }
+.comment-input, .rating-select { width:100%; padding:6px; margin-top:5px; border-radius:4px; border:1px solid var(--blue-royal); background-color:#2a2a2a; color:#fff; }
+.comment-submit { margin-top:5px; padding:6px 12px; border:none; border-radius:6px; background-color:var(--blue-royal); color:#fff; cursor:pointer; }
+.comment-submit:hover { background-color:#3b5b82; }
+.filter-input { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid var(--blue-royal); background-color: #2a2a2a; color: var(--white); font-size: 1em; }
+.delete-comment-btn { background-color: var(--red-emergency); color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; margin-right: 5px; }
 </style>
-</head>  
+</head>
+<body>
+<div class="header-controls">
+    <a href="main_services.html" class="btn-back">🔙 الصفحة الرئيسية</a>
+</div>
+<div class="container" style="max-width:1000px;">
+    <h1 id="pageHeading">اهلا بك يا زائرنا العزيز</h1>
+    <div class="role-title" id="roleTitleDisplay">جميع المساعدين المتاحين</div>
+    <input type="text" id="assistantSearch" class="filter-input" placeholder="ابحث باسم المساعد أو التخصص..." onkeyup="filterAssistants()">
+    
+    <div id="assistantCardsGrid" class="cards-grid"></div>
+</div>
 
-<body>  
-<div class="header-controls">  
-    <a href="manager_dashboard.html" class="btn-back">🔙 الصفحة الرئيسية</a>  
-</div>  
-
-<div class="container">  
-    <h1>إدارة المساعدين السياحيين</h1>  
-
-    <select id="roleSelect" class="role-select">  
-        <option value="">-- اختر الدور لعرض المساعدين --</option>  
-        <option value="GUIDE">مرشدين</option>  
-        <option value="COMPANION">مرافقين</option>  
-        <option value="DRIVER">سائقين</option>  
-    </select>  
-
-    <div id="assistantCardsGrid" class="cards-grid"></div>  
-</div>  
-
-<div id="commentsModal">  
-    <div class="modal-content">  
-        <span class="close-modal" onclick="closeCommentsModal()">✖</span>  
-        <h2 style="color: var(--gold); border-bottom:1px solid #444; padding-bottom:10px;">تعليقات المساعد</h2>
-        <div id="modalCommentsList"></div>  
-    </div>  
-</div>  
+<div id="commentsModal" class="modal-bg">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeCommentsModal()">×</button>
+        <h3 id="modalAssistantName"></h3>
+        <div id="modalCommentsList"></div>
+        <input type="text" placeholder="أدخل اسمك..." id="modalCommentName" class="comment-input">
+        <input type="text" placeholder="أضف تعليقاً..." id="modalCommentText" class="comment-input">
+        <select id="modalCommentRating" class="rating-select">
+            <option value="1">⭐ 1</option>
+            <option value="2">⭐ 2</option>
+            <option value="3">⭐ 3</option>
+            <option value="4">⭐ 4</option>
+            <option value="5" selected>⭐ 5</option>
+        </select>
+        <button onclick="submitModalComment()" class="comment-submit">إرسال التعليق</button>
+    </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, get, remove, onValue, off } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+import { getDatabase, ref, get, push, set, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
-  authDomain: "tourguideapp-313c1.firebaseapp.com",
-  databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",
-  projectId: "tourguideapp-313c1",
-  storageBucket: "tourguideapp-313c1.appspot.com",
-  messagingSenderId: "1036127588385",
-  appId: "1:1036127588385:web:d144dba8f70fe094395360"
+apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
+authDomain: "tourguideapp-313c1.firebaseapp.com",
+databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",
+projectId: "tourguideapp-313c1",
+storageBucket: "tourguideapp-313c1.appspot.com",
+messagingSenderId: "1036127588385",
+appId: "1:1036127588385:web:d144dba8f70fe094395360"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const roleSelect = document.getElementById('roleSelect');  
-const modal = document.getElementById('commentsModal');  
-const modalCommentsList = document.getElementById('modalCommentsList');  
+// قائمة عامة لحفظ جميع المساعدين للفلترة
+let allAssistants = [];
 
-const ROLES = { GUIDE:'assistants_guides', COMPANION:'assistants_companions', DRIVER:'assistants_drivers' };
-let currentRoleKey = '';
+const ROLES = {
+GUIDE: {key:"GUIDE", name:"مرشد سياحي"},
+COMPANION: {key:"COMPANION", name:"مرافق لذوي الاحتياجات الخاصة"},
+DRIVER: {key:"DRIVER", name:"سائق نقل خاص"}
+};
 
-// قائمة للاحتفاظ بـ Firebase Listeners لغرض إيقافها عند تغيير الدور
-let activeListeners = [];
+const keyMap = { GUIDE:'assistants_guides', COMPANION:'assistants_companions', DRIVER:'assistants_drivers' };
 
-roleSelect.addEventListener('change', () => { 
-    currentRoleKey = roleSelect.value;
-    renderAssistants(currentRoleKey); 
-});  
-
-function renderStars(rating){ return '⭐'.repeat(rating)+'☆'.repeat(5-rating); }
+// ⭐ الدوال المساعدة
+function renderStars(rating){
+let stars='';
+for(let i=1;i<=5;i++) stars+=i<=rating?'⭐':'☆';
+return stars;
+}
 
 function getMajorityRating(comments){
-    if(!comments || comments.length===0) return 5;
-    const counts = {};
-    const commentsArray = Array.isArray(comments) ? comments : Object.values(comments); 
-
-    commentsArray.forEach(c=>counts[c.rating]=(counts[c.rating]||0)+1);
-    let max=0, major=5;
-    for(const r in counts){ if(counts[r]>max){ max=counts[r]; major=parseInt(r); } }
-    return major;
+if(!comments || comments.length===0) return 5;
+// تحويل الكائن إلى مصفوفة إذا لزم الأمر
+const commentsArray = Array.isArray(comments) ? comments : Object.values(comments);
+const counts={};
+commentsArray.forEach(c=>counts[c.rating]=(counts[c.rating]||0)+1);
+let max=0, majority=5;
+for(const r in counts){ if(counts[r]>max){ max=counts[r]; majority=parseInt(r); } }
+return majority;
 }
 
-function stopListeners() {
-    activeListeners.forEach(off);
-    activeListeners = [];
+// المودل
+let currentModalCode = null;
+function openCommentsModal(code,name){
+currentModalCode=code;
+document.getElementById('modalAssistantName').textContent=name;
+loadModalComments(code);
+document.getElementById('commentsModal').style.display='flex';
 }
-
-// *** دوال Local Storage الجديدة ***
-
-function saveToLocalStorage(roleKey, data) {
-    localStorage.setItem(`admin_assistants_${roleKey}`, JSON.stringify(data));
+function closeCommentsModal(){
+document.getElementById('commentsModal').style.display='none';
+currentModalCode=null;
 }
+async function loadModalComments(code){
+const div=document.getElementById('modalCommentsList');
+div.innerHTML='<p style="text-align:center;color:#ccc;">جاري جلب التعليقات...</p>';
 
-function getFromLocalStorage(roleKey) {
-    const data = localStorage.getItem(`admin_assistants_${roleKey}`);
-    return data ? JSON.parse(data) : null;
-}
+try {
+    // 1. جلب التعليقات من Firebase للحصول على المفاتيح (Keys) اللازمة للحذف
+    const snap = await get(ref(db, `assistantComments/${code}`));
+    const commentsData = snap.val() || {};
+    const commentsArrayWithKeys = [];
 
-function updateLocalStorageAfterDelete(roleKey, chatCode) {
-    const cachedData = getFromLocalStorage(roleKey);
-    if (cachedData) {
-        // فلترة القائمة لإزالة المساعد المحذوف
-        const updatedData = cachedData.filter(a => a.chatCode !== chatCode);
-        saveToLocalStorage(roleKey, updatedData);
-    }
-}
-
-// *** نهاية دوال Local Storage الجديدة ***
-
-
-async function renderAssistants(roleKey){
-    stopListeners(); // إيقاف الـ listeners القديمة قبل البدء
-    const grid = document.getElementById('assistantCardsGrid');  
-    grid.innerHTML = '';  
-    if(!roleKey) return;
-
-    // 1. محاولة الجلب من Local Storage أولاً
-    let assistants = getFromLocalStorage(roleKey);
-    let cached = true;
-
-    if (!assistants) {
-        // 2. إذا لم تكن موجودة، قم بالجلب من Firebase
-        grid.innerHTML = '<p style="text-align:center;color:#ccc;">جاري جلب البيانات من الخادم...</p>';
-        cached = false;
-        try {
-            const snapshot = await get(ref(db, ROLES[roleKey]));
-            assistants = snapshot.exists() ? Object.values(snapshot.val()) : [];
-            // حفظها في Local Storage للوصول السريع مستقبلاً
-            saveToLocalStorage(roleKey, assistants);
-        } catch(error) {
-            console.error("Error fetching data from Firebase:", error);
-            grid.innerHTML = '<p style="text-align:center;color:var(--red-emergency);">فشل جلب البيانات من الخادم.</p>';
-            return;
+    // تحويل الكائن إلى مصفوفة مع تضمين المفتاح (key)
+    for (const key in commentsData) {
+        if (commentsData.hasOwnProperty(key)) {
+            commentsArrayWithKeys.push({ firebaseKey: key, ...commentsData[key] });
         }
     }
 
-
-    if(assistants.length===0){ grid.innerHTML='<p style="text-align:center;color:#aaa;">لا يوجد مساعدون لهذا الدور.</p>'; return; }
-
-    assistants.forEach(a=>{
-        const card = document.createElement('div');
-        card.className='assistant-card';
-        
-        let details='';
-        if(a.groupLimit){ details += `<p><strong>التخصص:</strong> ${a.guideType||''}</p><p><strong>حد المجموعة:</strong> ${a.groupLimit} شخص</p><p><strong>سعر اليوم:</strong> ${a.price} درهم</p>`; }
-        else if(a.specialization){ details += `<p><strong>التخصص:</strong> ${a.specialization||''}</p><p><strong>سعر اليوم:</strong> ${a.priceDay} درهم</p><p><strong>سعر الساعة:</strong> ${a.priceHour} درهم</p>`; }
-        else if(a.cityPrice){ details += `<p><strong>أجرة المدينة:</strong> ${a.cityPrice} درهم</p><p><strong>أجرة خارج المدينة:</strong> ${a.outCityPrice} درهم</p>`; }
-
-        // إنشاء عناصر البطاقة
-        card.innerHTML=`
-            <div class="card-header">
-                <img src="${a.img||'images/placeholder_profile.png'}" class="profile-img" alt="${a.name}">
-                <div>
-                    <h3>${a.name}</h3>
-                    <div class="rating" id="rating-${a.chatCode}">⭐Loading... (${a.experience} سنوات)</div>
-                </div>
-            </div>
-            <div class="card-details">${details}<p><strong>نبذة:</strong> ${a.about}</p></div>
-            <button class="btn-delete" onclick="window.deleteAssistant('${roleKey}','${a.chatCode}')">حذف المساعد</button>
-            <button class="btn-comments" onclick="window.openCommentsModal('${a.chatCode}')">عرض التعليقات</button>
-        `;
-        grid.appendChild(card);
-
-        // تفعيل listener لتقييم كل مساعد (نستخدم Firebase هنا للتحديثات المباشرة للتقييم)
-        const ratingElement = document.getElementById(`rating-${a.chatCode}`);
-        const commentsRef = ref(db, `assistantComments/${a.chatCode}`);
-        
-        const listener = onValue(commentsRef, snap=>{
-            const commentsData = snap.val() || {};
-            const majorityRating = getMajorityRating(commentsData);
-            ratingElement.innerHTML = `${renderStars(majorityRating)} (${a.experience} سنوات)`;
-        });
-        activeListeners.push(listener);
-
-    });
-}
-
-// تعريف الدالة للنطاق العام (Window) لتكون قابلة للاستدعاء من onclick
-window.deleteAssistant = async function(roleKey, chatCode){
-    if(!confirm('هل أنت متأكد من حذف هذا المساعد؟ سيتم حذف جميع بياناته وتعليقاته.')) return;
+    // 2. تحديث الذاكرة المحلية (localStorage) بالبيانات الحديثة
+    localStorage.setItem(`comments_${code}`, JSON.stringify(Object.values(commentsData)));
     
+    div.innerHTML='';
+    if(commentsArrayWithKeys.length === 0){
+        div.innerHTML='<p style="text-align:center;color:#aaa;">لا يوجد تعليقات حتى الآن.</p>';
+        return;
+    }
+
+    // 3. عرض التعليقات مع زر الحذف
+    commentsArrayWithKeys.slice(-20).forEach(c=>{
+        const el=document.createElement('div');
+        el.className='comment-item';
+        el.innerHTML=`
+            <span class="comment-info">
+                <span class="comment-name">${c.name||'زائر'}</span>
+                <span class="comment-stars">${renderStars(c.rating)}</span>
+                <span class="comment-text">${c.text}</span>
+            </span>
+            <button class="delete-comment-btn" onclick="deleteComment('${code}', '${c.firebaseKey}')">حذف</button>
+        `;
+        div.appendChild(el);
+    });
+
+} catch (error) {
+    console.error("Error loading comments:", error);
+    div.innerHTML='<p style="text-align:center;color:var(--red-emergency);">فشل جلب التعليقات.</p>';
+}
+}
+async function submitModalComment(){
+if(!currentModalCode) return;
+const name = document.getElementById('modalCommentName').value.trim() || "زائر";
+const text = document.getElementById('modalCommentText').value.trim();
+const rating = parseInt(document.getElementById('modalCommentRating').value);
+if(!text) return;
+const comment = {name,text,rating, timestamp: Date.now()};
+
+try {
+    // الحفظ في Firebase
+    const newRef = push(ref(db, `assistantComments/${currentModalCode}`));    
+    await set(newRef, comment);    
+    
+    // تحديث العرض وإعادة تعيين الحقول
+    document.getElementById('modalCommentName').value='';    
+    document.getElementById('modalCommentText').value='';    
+    document.getElementById('modalCommentRating').value='5';    
+    await loadModalComments(currentModalCode); // إعادة تحميل التعليقات من Firebase لتحديث localStorage
+    
+    // تحديث تقييم البطاقة الرئيسية (اختياري، يتطلب إعادة renderCards)
+    renderCards(allAssistants, document.getElementById('roleTitleDisplay').textContent);
+
+
+} catch(error) {
+    alert("فشل إرسال التعليق: " + error.message);
+}
+}
+
+// دالة حذف التعليق الفردي
+async function deleteComment(assistantCode, commentKey) {
+    if (!confirm('هل أنت متأكد من حذف هذا التعليق؟')) return;
     try {
-        // 1. حذف بيانات المساعد الأساسية (يجب استخدام await)
-        await remove(ref(db, `${ROLES[roleKey]}/${chatCode}`));
-        
-        // 2. حذف التعليقات المرتبطة به (يجب استخدام await)
-        await remove(ref(db, `assistantComments/${chatCode}`));
-        
-        // 3. تحديث Local Storage بعد الحذف
-        updateLocalStorageAfterDelete(roleKey, chatCode);
-
-        // 4. إعادة عرض القائمة لتحديث الواجهة
-        renderAssistants(roleKey); 
-
-        alert("✅ تم حذف المساعد بنجاح.");
-    } catch(error) {
-        alert("❌ فشل الحذف: " + error.message);
-        console.error("Error deleting assistant:", error);
+        await remove(ref(db, `assistantComments/${assistantCode}/${commentKey}`));
+        // تحديث عرض التعليقات بعد الحذف
+        await loadModalComments(assistantCode); 
+    } catch (error) {
+        alert("فشل حذف التعليق: " + error.message);
+        console.error("Error deleting comment:", error);
     }
 }
 
-// تعريف الدالة للنطاق العام (Window)
-window.openCommentsModal = function(chatCode){
-    modalCommentsList.innerHTML='<p style="text-align:center;color:#ccc;">جاري التحميل...</p>';
-    modal.style.display='flex';
 
-    get(ref(db, `assistantComments/${chatCode}`)).then(snapshot => {
-        modalCommentsList.innerHTML='';
-        const comments = snapshot.val() || {};
-        const commentKeys = Object.keys(comments);
-        
-        if(commentKeys.length===0){ 
-            modalCommentsList.innerHTML='<p style="color:#aaa;text-align:center;">لا يوجد تعليقات حتى الآن.</p>'; 
-        } else {
-            commentKeys.forEach((key, i) => {
-                const c = comments[key];
-                const div=document.createElement('div');
-                div.className='comment-item';
-                
-                div.innerHTML=`<span class="comment-info"><span class="comment-name">${c.name||'غير معروف'}</span><span class="comment-stars">${renderStars(c.rating)}</span><span class="comment-text">${c.text}</span></span>`;
-                
-                const delBtn=document.createElement('button');
-                delBtn.textContent="🗑️"; delBtn.style.cssText="background:var(--red-emergency);border:none;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;";
-                
-                delBtn.onclick=async()=>{ 
-                    if(confirm('هل تريد حذف هذا التعليق؟')){ 
-                        try {
-                            // الحذف يتم باستخدام المفتاح الفريد (key) للتعليق (يجب استخدام await)
-                            await remove(ref(db, `assistantComments/${chatCode}/${key}`)); 
-                            // إعادة فتح الـ Modal لتحديث القائمة بعد الحذف
-                            window.openCommentsModal(chatCode); 
-                        } catch(error) {
-                            alert("فشل حذف التعليق: " + error.message);
-                        }
-                    } 
-                };
-                div.appendChild(delBtn);
-                modalCommentsList.appendChild(div);
-            });
-        }
-    }).catch(error => {
-        console.error("Error fetching comments:", error);
-        modalCommentsList.innerHTML='<p style="color:var(--red-emergency);text-align:center;">فشل جلب التعليقات.</p>';
+// عرض البطاقات
+function renderCards(assistantsList,title){
+document.getElementById('roleTitleDisplay').textContent = title;
+const grid = document.getElementById('assistantCardsGrid');
+grid.innerHTML='';
+
+if(assistantsList.length===0){ grid.innerHTML='<p style="text-align:center;color:#aaa;">لا يوجد مساعدون متاحون حالياً.</p>'; return; }
+
+assistantsList.forEach(a=>{
+const card = document.createElement('div');
+card.className='assistant-card';
+card.setAttribute('data-id', a.appId); 
+card.setAttribute('data-name', a.name);
+card.setAttribute('data-type', a.guideType || a.specialization || a.role); // للفلترة
+
+let details='';    
+    if(a.groupLimit){ details+=`<p><strong>التخصص:</strong> ${a.guideType||'عام'}</p><p><strong>حد المجموعة:</strong> ${a.groupLimit} شخص</p><p><strong>سعر اليوم:</strong> ${a.price} درهم</p>`; }    
+    else if(a.specialization){ details+=`<p><strong>التخصص:</strong> ${a.specialization}</p><p><strong>سعر اليوم:</strong> ${a.priceDay} درهم</p><p><strong>سعر الساعة:</strong> ${a.priceHour} درهم</p>`; }    
+    else if(a.cityPrice){ details+=`<p><strong>أجرة المدينة:</strong> ${a.cityPrice} درهم</p><p><strong>أجرة خارج المدينة:</strong> ${a.outCityPrice} درهم</p>`; }    
+
+    // حساب التقييم الفردي من localStorage (للسرعة)
+    const comments = JSON.parse(localStorage.getItem(`comments_${a.appId}`)) || [];    
+    const majorityRating = getMajorityRating(comments);    
+    const ratingHTML=`<div class="rating">${renderStars(majorityRating)}</div><div>(${a.experience} سنوات خبرة)</div>`;    
+
+    card.innerHTML=`    
+        <div class="card-header">    
+            <img src="${a.img||'images/placeholder_profile.png'}" class="profile-img" alt="${a.name}">    
+            <div>    
+                <h3>${a.name}</h3>    
+                ${ratingHTML}    
+            </div>    
+        </div>    
+        <div class="card-details">${details}<p><strong>نبذة:</strong> ${a.about}</p></div>    
+        <button class="contact-btn" onclick="startChat('${a.appId}','${a.name}')">💬 تواصل الآن</button>    
+        <button class="comments-btn" onclick="openCommentsModal('${a.appId}','${a.name}')">💬 التعليقات</button>    
+    `;    
+    grid.appendChild(card);    
+});
+
+}
+
+// دالة الفلترة (البحث)
+function filterAssistants() {
+    const searchTerm = document.getElementById('assistantSearch').value.toLowerCase();
+    const filteredList = allAssistants.filter(a => {
+        const nameMatch = a.name.toLowerCase().includes(searchTerm);
+        const specializationMatch = (a.guideType || a.specialization || a.role || '').toLowerCase().includes(searchTerm);
+        return nameMatch || specializationMatch;
     });
+    renderCards(filteredList, document.getElementById('roleTitleDisplay').textContent);
 }
 
-// تعريف الدالة للنطاق العام (Window)
-window.closeCommentsModal = function(){ 
-    modal.style.display='none'; 
+
+// جلب البيانات مع التخزين في localStorage (Cashing Strategy)
+document.addEventListener('DOMContentLoaded', async()=>{
+const urlParams = new URLSearchParams(window.location.search);
+const roleKey = urlParams.get('role');
+
+const storageKey = roleKey ? `assistants_${roleKey}` : 'assistants_all';    
+let cachedData = JSON.parse(localStorage.getItem(storageKey));    
+
+// 1. عرض البيانات المخزنة مؤقتاً أولاً (للسرعة)
+if(cachedData){    
+    allAssistants = cachedData;
+    renderCards(allAssistants, roleKey ? ROLES[roleKey].name : "جميع المساعدين المتاحين");    
+}    
+
+// 2. جلب البيانات الحديثة من Firebase وتخزينها
+try {
+    let freshData = [];
+    if(roleKey){    
+        const snap = await get(ref(db,keyMap[roleKey]));    
+        if(snap.exists()){    
+            freshData = Object.values(snap.val());    
+        }    
+    } else {    
+        const guides = (await get(ref(db,'assistants_guides'))).val() || {};    
+        const companions = (await get(ref(db,'assistants_companions'))).val() || {};    
+        const drivers = (await get(ref(db,'assistants_drivers'))).val() || {};    
+        
+        freshData = [...Object.values(guides),...Object.values(companions),...Object.values(drivers)];    
+    }
+    
+    // تأكد من أن البيانات الجديدة مختلفة قبل التحديث وإعادة العرض
+    const freshDataString = JSON.stringify(freshData);
+    if (freshDataString !== localStorage.getItem(storageKey)) {
+        localStorage.setItem(storageKey, freshDataString);
+        allAssistants = freshData;
+        // إعادة عرض القائمة بالبيانات الحديثة
+        renderCards(allAssistants, roleKey ? ROLES[roleKey].name : "جميع المساعدين المتاحين");
+    }
+
+} catch(error) {
+    console.error("Error fetching fresh data from Firebase:", error);
+    if (!cachedData) {
+        document.getElementById('assistantCardsGrid').innerHTML = '<p style="text-align:center;color:var(--red-emergency);">فشل جلب البيانات. قد يكون هناك مشكلة في الاتصال.</p>';
+    }
 }
+
+
+});
+
+// هذه الدالة تمرر كود المساعد (appId) إلى صفحة الشات
+function startChat(code,name){ window.location.href=`chat_page.html?code=${code}`; }
+
+// ** إضافة الدوال للنطاق العام **
+window.openCommentsModal = openCommentsModal;
+window.closeCommentsModal = closeCommentsModal;
+window.submitModalComment = submitModalComment;
+window.startChat = startChat;
+window.filterAssistants = filterAssistants;
+window.deleteComment = deleteComment; // إضافة دالة حذف التعليق للنطاق العام
 
 </script>
-</body>  
+</body>
 </html>
