@@ -33,7 +33,6 @@ select {appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8
 .btn-submit:disabled {background-color:#4a4a4a; color:#999; cursor:not-allowed;}
 .file-upload-info {color:#ccc; font-size:0.9em; margin-bottom:15px;}
 .file-upload-info strong {color:var(--gold);}
-.alert-warning {background-color:#5d4a0f; color:var(--yellow-warning); padding:8px; border-radius:5px; margin-top:5px; font-size:0.9em;}
 #message-box {padding:15px; margin-top:20px; text-align:center; display:none; border-radius:5px; transition: all 0.3s ease;}
 .header-controls {display:flex; justify-content:space-between; padding:15px; background-color:#1f1f1f; border-bottom:1px solid var(--border-color);}
 .btn-back, #checkRequestBtn {background-color:var(--blue-royal); color:var(--white); padding:8px 15px; border-radius:6px; text-decoration:none; font-size:0.9em; transition:background-color 0.3s; border:none; cursor:pointer;}
@@ -93,8 +92,8 @@ select {appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8
 <input type="file" id="idBack" accept="image/*,application/pdf" required>
 </div>
 <div class="form-group">
-<label for="cv">📄 السيرة الذاتية (CV) (PDF فقط) 📂:</label>
-<input type="file" id="cv" accept="application/pdf" required>
+<label for="cv">📄 السيرة الذاتية (CV) (PDF أو Word) 📂:</label>
+<input type="file" id="cv" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
 </div>
 </div>
 
@@ -133,6 +132,7 @@ select {appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8
 
 <button type="submit" class="btn-submit" style="width:100%; margin-top:30px;">إرسال الطلب</button>
 <div id="message-box"></div>
+
 </form>
 </div>
 
@@ -153,7 +153,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-function fileToDataURL(file){return new Promise((resolve,reject)=>{if(!file){resolve(null);return;}const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=error=>reject(error);reader.readAsDataURL(file);});}
+function fileToDataURL(file){
+    return new Promise((resolve,reject)=>{
+        if(!file){resolve(null); return;}
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
 
 function toggleFileFields(){
     const roleKey = document.getElementById('roleSelect').value;
@@ -163,8 +171,14 @@ function toggleFileFields(){
         DRIVER: document.getElementById('driverFiles')
     };
     document.getElementById('commonFiles').style.display='block';
-    Object.values(sections).forEach(sec=>{sec.style.display='none'; sec.querySelectorAll('input[type="file"]').forEach(inp=>inp.required=false);});
-    if(roleKey && sections[roleKey]){sections[roleKey].style.display='block'; sections[roleKey].querySelectorAll('input[type="file"]').forEach(inp=>inp.required=true);}
+    Object.values(sections).forEach(sec=>{
+        sec.style.display='none';
+        sec.querySelectorAll('input[type="file"]').forEach(inp=>inp.required=false);
+    });
+    if(roleKey && sections[roleKey]){
+        sections[roleKey].style.display='block';
+        sections[roleKey].querySelectorAll('input[type="file"]').forEach(inp=>inp.required=true);
+    }
 }
 
 async function getFilePaths(){
@@ -184,7 +198,7 @@ function generateApplicationId(){return Math.floor(10000+Math.random()*90000).to
 
 document.getElementById('roleSelect').addEventListener('change',toggleFileFields);
 
-document.getElementById('applicationForm').addEventListener('submit',async e=>{
+document.getElementById('applicationForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const msgBox=document.getElementById('message-box');
     msgBox.style.display='block';
@@ -194,8 +208,13 @@ document.getElementById('applicationForm').addEventListener('submit',async e=>{
     submitBtn.disabled=true;
 
     let filesData;
-    try{filesData=await getFilePaths();}
-    catch(error){submitBtn.disabled=false; msgBox.textContent=`❌ ${error.message}`; msgBox.style.backgroundColor='var(--red-emergency)'; return;}
+    try{ filesData = await getFilePaths(); }
+    catch(error){
+        submitBtn.disabled=false;
+        msgBox.textContent=`❌ ${error.message}`;
+        msgBox.style.backgroundColor='var(--red-emergency)';
+        return;
+    }
 
     const newId = generateApplicationId();
     const newApplication = {
@@ -216,6 +235,9 @@ document.getElementById('applicationForm').addEventListener('submit',async e=>{
 
         msgBox.innerHTML=`✅ تم استلام طلبك بنجاح، رقم الطلب هو <strong>${newId}</strong>.<br>الرجاء نسخ الرقم للاستعلام لاحقاً.`;
         msgBox.style.backgroundColor='var(--green-success)';
+
+        // إ
+
     }catch(err){
         console.error(err);
         msgBox.textContent='❌ فشل إرسال الطلب، حاول مرة أخرى.';
