@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>عرض الفنادق</title>
-<link rel="stylesheet" href="style.css">
+<title>عرض الفنادق مع فلتر</title>
 <style>
 body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0; margin:0; padding:0; }
-.container { max-width: 1000px; margin: 20px auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.filter-bar { max-width:1000px; margin:20px auto; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.filter-bar select, .filter-bar input { padding:8px; border-radius:5px; border:1px solid #555; background-color:#2c2c2c; color:#e0e0e0; }
+.container { max-width: 1000px; margin: 10px auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 .card { background-color: #1e1e1e; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; }
 .card img { width: 100%; height: 200px; object-fit: cover; }
 .card-content { padding: 15px; flex: 1; display: flex; flex-direction: column; }
@@ -36,9 +37,28 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
 </style>
 </head>
 <body>
+
+<!-- فلتر البحث -->
+<div class="filter-bar">
+    <label>عدد النجوم:
+        <select id="filterStars">
+            <option value="0">كل التقييمات</option>
+            <option value="5">5⭐</option>
+            <option value="4">4⭐ فأكثر</option>
+            <option value="3">3⭐ فأكثر</option>
+            <option value="2">2⭐ فأكثر</option>
+            <option value="1">1⭐ فأكثر</option>
+        </select>
+    </label>
+    <label>السعر الليلي أقل من:
+        <input type="number" id="filterPrice" placeholder="مثال: 1000">
+    </label>
+    <button id="applyFilter">تطبيق الفلتر</button>
+</div>
+
 <div class="container" id="cardsContainer"></div>
 
-<!-- نموذج الحجز -->
+<!-- مودال الحجز -->
 <div class="modal" id="orderModal">
     <div class="modal-content">
         <span class="close" id="modalClose">×</span>
@@ -56,7 +76,7 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
     </div>
 </div>
 
-<!-- نموذج التعليقات -->
+<!-- مودال التعليقات -->
 <div class="modal" id="commentsModal">
     <div class="modal-content">
         <span class="close" id="commentsClose">×</span>
@@ -80,7 +100,7 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, get, push, set, child } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
@@ -114,35 +134,34 @@ const commentText = document.getElementById('commentText');
 const commentRating = document.getElementById('commentRating');        
 const addCommentBtn = document.getElementById('addCommentBtn');
 
-let currentPlaceId = null;
+const filterStars = document.getElementById('filterStars');
+const filterPrice = document.getElementById('filterPrice');
+const applyFilter = document.getElementById('applyFilter');
 
-// جلب الفنادق من Firebase
+let currentPlaceId = null;
+let hotelsData = [];
+
+// تحميل الفنادق
 async function loadHotels() {
     const snapshot = await get(ref(db, 'hotels'));
-    if(snapshot.exists()) return snapshot.val();
-    return {};
-}
-
-// جلب التعليقات من Firebase
-async function getComments(placeId) {
-    const snapshot = await get(ref(db, `comments/${placeId}`));
-    if(snapshot.exists()) return Object.values(snapshot.val());
+    if(snapshot.exists()) return Object.entries(snapshot.val()).map(([id, data])=>({id, ...data}));
     return [];
 }
-// حفظ طلب حجز جديد باستخدام كود المكان كمفتاح رئيسي
-async function saveOrderFirebase(placeCode, orderData) {
-    // كل الطلبات تحت هذا الكود
-    const ordersRef = ref(db, `bookings/${placeCode}`);
-    
-    // لو عايز كل طلب له مفتاح فريد داخلي
-    const newOrderRef = push(ordersRef);
-    await set(newOrderRef, orderData);
 
-    // لو عايز تحفظ الطلب مباشرة بكود المستخدم كمعرف فريد (بدون push)
-    // await set(ref(db, `bookings/${placeCode}`), orderData);
+// التعليقات
+async function getComments(placeId) {
+    const snapshot = await get(ref(db, `comments/${placeId}`));
+    return snapshot.exists() ? Object.values(snapshot.val()) : [];
 }
 
-// حفظ تعليق جديد
+// حفظ الطلب تحت كود المكان
+async function saveOrderFirebase(placeCode, orderData) {
+    const ordersRef = ref(db, `bookings/${placeCode}`);
+    const newOrderRef = push(ordersRef);
+    await set(newOrderRef, orderData);
+}
+
+// حفظ تعليق
 async function saveCommentFirebase(placeId, commentData) {
     const commentsRef = ref(db, `comments/${placeId}`);
     const newCommentRef = push(commentsRef);
@@ -154,26 +173,32 @@ function calcAvgRating(comments) {
     if(comments.length===0) return 'غير مُقيّم';
     const total = comments.reduce((sum,c)=>sum+parseInt(c.rating||0),0);
     const avg = (total/comments.length).toFixed(1);
-    const stars = '⭐'.repeat(Math.round(avg));
-    return `${avg} ${stars}`;
+    return {avg, stars:'⭐'.repeat(Math.round(avg))};
 }
 
-// عرض الفنادق
+// عرض الفنادق مع الفلتر
 async function renderHotels() {
     cardsContainer.innerHTML='';
-    const hotelsObj = await loadHotels();
-    const hotels = Object.entries(hotelsObj).map(([key, value])=>({id:key, ...value}));
+    hotelsData = await loadHotels();
 
-    for(const place of hotels){
+    const starFilter = parseInt(filterStars.value);
+    const priceFilter = parseFloat(filterPrice.value) || Infinity;
+
+    const filtered = hotelsData.filter(h=>{
+        const rating = calcAvgRating(await getComments(h.id)).avg;
+        return rating >= starFilter && (h.priceNight || 0) <= priceFilter;
+    });
+
+    for(const place of filtered){
         const comments = await getComments(place.id);
-        const avgRating = calcAvgRating(comments);
+        const rating = calcAvgRating(comments);
         const card=document.createElement('div');
         card.className='card';
         card.innerHTML=`
             <img src="${place.photoBase64}" alt="${place.name}">
             <div class="card-content">
                 <h3>${place.name}</h3>
-                <p class="rating">التقييم: ${avgRating}</p>
+                <p class="rating">التقييم: ${rating.stars} (${rating.avg})</p>
                 <p>السعر الليلي: <strong>${place.priceNight || 'غير محدد'}</strong></p>
                 <p>السعر الأسبوعي: <strong>${place.priceWeek || 'غير محدد'}</strong></p>
                 <p>السعر الشهري: <strong>${place.priceMonth || 'غير محدد'}</strong></p>
@@ -193,99 +218,21 @@ async function renderHotels() {
             modalPlaceName.textContent=place.name;
             orderModal.style.display='flex';
             orderSuccess.style.display='none';
-            userName.value='';
-            userPhone.value='';
-            userRequest.value='';
-            shareLocationOrder.checked=false;
+            userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
         });
 
-        dirBtn.addEventListener('click', ()=>{
-            if(place.gmapsLink) window.open(place.gmapsLink,'_blank');
-        });
+        dirBtn.addEventListener('click', ()=>{ if(place.gmapsLink) window.open(place.gmapsLink,'_blank'); });
 
         commentsBtn.addEventListener('click', async ()=>{
             currentPlaceId = place.id;
             commentsModal.style.display='flex';
-            commentName.value='';
-            commentText.value='';
-            commentRating.value='5';
+            commentName.value=''; commentText.value=''; commentRating.value='5';
             renderComments();
         });
 
         cardsContainer.appendChild(card);
     }
 }
-
-// إغلاق النوافذ
-modalClose.addEventListener('click', ()=> orderModal.style.display='none');
-commentsClose.addEventListener('click', ()=> commentsModal.style.display='none');
-
-// إرسال الطلب
-submitOrder.addEventListener('click', async ()=>{
-    if(!userName.value || !userPhone.value || !userRequest.value){
-        alert('يرجى تعبئة جميع حقول الحجز.');
-        return;
-    }
-    let locData=null;
-    if(shareLocationOrder.checked && navigator.geolocation){
-        submitOrder.disabled = true;
-        submitOrder.textContent = 'جاري تحديد الموقع...';
-        navigator.geolocation.getCurrentPosition(async pos=>{
-            locData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            await saveOrderFirebase(currentPlaceId, {
-                name:userName.value.trim(),
-                phone:userPhone.value.trim(),
-                request:userRequest.value.trim(),
-                location:locData,
-                time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle: 'short', timeStyle:'short'})
-            });
-            submitOrder.disabled=false;
-            submitOrder.textContent='إرسال طلب الحجز';
-            orderSuccess.style.display='block';
-            userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
-        }, async ()=>{
-            alert('تعذر تحديد الموقع. سيتم إرسال الطلب بدون موقع.');
-            await saveOrderFirebase(currentPlaceId, {
-                name:userName.value.trim(),
-                phone:userPhone.value.trim(),
-                request:userRequest.value.trim(),
-                location:null,
-                time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle: 'short', timeStyle:'short'})
-            });
-            submitOrder.disabled=false;
-            submitOrder.textContent='إرسال طلب الحجز';
-            orderSuccess.style.display='block';
-            userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
-        });
-    } else {
-        await saveOrderFirebase(currentPlaceId, {
-            name:userName.value.trim(),
-            phone:userPhone.value.trim(),
-            request:userRequest.value.trim(),
-            location:null,
-            time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle: 'short', timeStyle:'short'})
-        });
-        orderSuccess.style.display='block';
-        userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
-    }
-});
-
-// إضافة تعليق
-addCommentBtn.addEventListener('click', async ()=>{
-    if(!commentName.value || !commentText.value || !commentRating.value){
-        alert('يرجى تعبئة الاسم والتقييم والتعليق.');
-        return;
-    }
-    await saveCommentFirebase(currentPlaceId, {
-        name:commentName.value.trim(),
-        comment:commentText.value.trim(),
-        rating:commentRating.value,
-        time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
-    });
-    commentName.value=''; commentText.value=''; commentRating.value='5';
-    renderComments();
-    renderHotels();
-});
 
 // عرض التعليقات
 async function renderComments(){
@@ -300,6 +247,80 @@ async function renderComments(){
         commentsList.appendChild(div);
     });
 }
+
+// اغلاق المودال
+modalClose.addEventListener('click', ()=> orderModal.style.display='none');
+commentsClose.addEventListener('click', ()=> commentsModal.style.display='none');
+
+// ارسال الطلب
+submitOrder.addEventListener('click', async ()=>{
+    if(!userName.value || !userPhone.value || !userRequest.value){
+        alert('يرجى تعبئة جميع حقول الحجز.');
+        return;
+    }
+    let locData=null;
+    if(shareLocationOrder.checked && navigator.geolocation){
+        submitOrder.disabled = true;
+        submitOrder.textContent = 'جاري تحديد الموقع...';
+        navigator.geolocation.getCurrentPosition(async pos=>{
+            locData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            await saveOrderFirebase(currentPlaceId,{
+                name:userName.value.trim(),
+                phone:userPhone.value.trim(),
+                request:userRequest.value.trim(),
+                location:locData,
+                time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
+            });
+            submitOrder.disabled=false;
+            submitOrder.textContent='إرسال طلب الحجز';
+            orderSuccess.style.display='block';
+            userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
+        }, async ()=>{
+            alert('تعذر تحديد الموقع. سيتم إرسال الطلب بدون موقع.');
+            await saveOrderFirebase(currentPlaceId,{
+                name:userName.value.trim(),
+                phone:userPhone.value.trim(),
+                request:userRequest.value.trim(),
+                location:null,
+                time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
+            });
+            submitOrder.disabled=false;
+            submitOrder.textContent='إرسال طلب الحجز';
+            orderSuccess.style.display='block';
+            userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
+        });
+    } else {
+        await saveOrderFirebase(currentPlaceId,{
+            name:userName.value.trim(),
+            phone:userPhone.value.trim(),
+            request:userRequest.value.trim(),
+            location:null,
+            time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
+        });
+        orderSuccess.style.display='block';
+        userName.value=''; userPhone.value=''; userRequest.value=''; shareLocationOrder.checked=false;
+    }
+});
+
+// إضافة تعليق
+addCommentBtn.addEventListener('click', async ()=>{
+    if(!commentName.value || !commentText.value || !commentRating.value){
+        alert('يرجى تعبئة الاسم والتقييم والتعليق.');
+        return;
+    }
+    await saveCommentFirebase(currentPlaceId,{
+        name:commentName.value.trim(),
+        comment:commentText.value.trim(),
+        rating:commentRating.value,
+        time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo', dateStyle:'short', timeStyle:'short'})
+    });
+    commentName.value=''; commentText.value=''; commentRating.value='5';
+    renderComments();
+    renderHotels();
+});
+
+// تطبيق الفلتر
+applyFilter.addEventListener('click', renderHotels);
 
 // بدء التحميل
 renderHotels();
