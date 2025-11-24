@@ -38,7 +38,7 @@ button { padding:10px 15px; border:none; border-radius:5px; cursor:pointer; font
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
@@ -63,26 +63,40 @@ const notifSound = document.getElementById('notifSound');
 let currentPlaceCode = null;
 let lastOrdersCount = 0;
 
+// طلب إذن الإشعارات
+if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+}
+
 async function displayOrders(){
     if(!currentPlaceCode) return;
 
     const ordersRef = ref(db,'bookings/'+currentPlaceCode);
     const snapshot = await get(ordersRef);
-    const orders = snapshot.exists() ? snapshot.val() : [];
+    const ordersObj = snapshot.exists() ? snapshot.val() : {};
+    const ordersKeys = Object.keys(ordersObj);
 
-    // صوت الاشعار إذا وصل طلب جديد
-    if(orders.length > lastOrdersCount){
+    // تشغيل الصوت والإشعار للطلبات الجديدة
+    if(ordersKeys.length > lastOrdersCount){
         notifSound.play();
+        if ("Notification" in window && Notification.permission === "granted") {
+            const latestOrder = ordersObj[ordersKeys[ordersKeys.length-1]];
+            new Notification("طلب جديد", {
+                body: `وصل طلب جديد من ${latestOrder.name}`,
+                icon: 'https://cdn-icons-png.flaticon.com/512/3081/3081932.png'
+            });
+        }
     }
-    lastOrdersCount = orders.length;
+    lastOrdersCount = ordersKeys.length;
 
     ordersContainer.innerHTML='';
-    if(orders.length===0){
+    if(ordersKeys.length===0){
         ordersContainer.innerHTML='<p style="text-align:center; color:#ffa500;">لا توجد طلبات جديدة بعد.</p>';
         return;
     }
 
-    orders.forEach((order,i)=>{
+    ordersKeys.forEach((key,i)=>{
+        const order = ordersObj[key];
         const div = document.createElement('div');
         div.className='order-card';
         let info = `<div class="order-info">
@@ -93,7 +107,7 @@ async function displayOrders(){
                         الوقت: ${order.time || ''}</div>`;
         let actions = `<div>
                         ${order.location? `<button onclick="openLocation(${order.location.lat},${order.location.lng})" class="small-btn location-btn">فتح موقعي</button>`:''}
-                        <button onclick="deleteOrder(${i})" class="small-btn delete-btn">حذف الطلب</button>
+                        <button onclick="deleteOrder('${key}')" class="small-btn delete-btn">حذف الطلب</button>
                         </div>`;
         div.innerHTML = info + actions;
         ordersContainer.appendChild(div);
@@ -110,7 +124,7 @@ refreshBtn.addEventListener('click', displayOrders);
 deleteAllBtn.addEventListener('click', async ()=>{
     if(!currentPlaceCode) return;
     if(confirm('هل تريد حذف جميع الطلبات؟')){
-        await set(ref(db,'bookings/'+currentPlaceCode), []);
+        await set(ref(db,'bookings/'+currentPlaceCode), {});
         lastOrdersCount = 0;
         displayOrders();
     }
@@ -120,15 +134,11 @@ document.getElementById('backToLoginBtn').addEventListener('click', () => {
     window.location.href = 'login_page.html';
 });
 
-window.deleteOrder = async function(index){
+window.deleteOrder = async function(key){
     if(!currentPlaceCode) return;
     if(confirm('هل تريد حذف هذا الطلب؟')){
-        const ordersRef = ref(db,'bookings/'+currentPlaceCode);
-        const snapshot = await get(ordersRef);
-        let orders = snapshot.exists() ? snapshot.val() : [];
-        orders.splice(index,1);
-        await saveOrders(orders);
-        lastOrdersCount = orders.length;
+        await set(ref(db,'bookings/'+currentPlaceCode+'/'+key), null);
+        lastOrdersCount -= 1;
         displayOrders();
     }
 }
