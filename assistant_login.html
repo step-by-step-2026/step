@@ -1,96 +1,100 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>دخول المساعد</title>
-<style>
-body { background:#121212; color:#fff; font-family: Arial; margin:0; padding:0; }
-.container { width:90%; max-width:400px; margin:60px auto; background:#1e1e1e; padding:20px; border-radius:12px; box-shadow:0 0 10px #000; }
-h2 { text-align:center; margin-bottom:20px; color:#4dd0e1; }
-input { width:100%; padding:12px; margin:10px 0; border:none; border-radius:8px; background:#2c2c2c; color:#fff; }
-button { width:100%; padding:12px; background:#4dd0e1; border:none; border-radius:8px; margin-top:10px; font-size:16px; cursor:pointer; }
-button:hover { opacity:0.9; }
-.error { background:#b71c1c; padding:10px; border-radius:8px; margin:10px 0; display:none; text-align:center; }
-.success { background:#1b5e20; padding:10px; border-radius:8px; margin:10px 0; display:none; text-align:center; }
-</style>
-</head>
-<body>
-<div class="container">
-    <h2>دخول المساعد</h2>
-    <div id="error" class="error"></div>
-    <div id="success" class="success"></div>
+<!DOCTYPE html>  
+<html lang="ar" dir="rtl">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>دخول المساعد</title>  
+<style>  
+body { background:#121212; color:#fff; font-family: Arial; margin:0; padding:0; }  
+.container { width:90%; max-width:400px; margin:60px auto; background:#1e1e1e; padding:20px; border-radius:12px; box-shadow:0 0 10px #000; }  
+h2 { text-align:center; margin-bottom:20px; color:#4dd0e1; }  
+input { width:100%; padding:12px; margin:10px 0; border:none; border-radius:8px; background:#2c2c2c; color:#fff; }  
+button { width:100%; padding:12px; background:#4dd0e1; border:none; border-radius:8px; margin-top:10px; font-size:16px; cursor:pointer; }  
+button:hover { opacity:0.9; }  
+.error { background:#b71c1c; padding:10px; border-radius:8px; margin:10px 0; display:none; text-align:center; }  
+.success { background:#1b5e20; padding:10px; border-radius:8px; margin:10px 0; display:none; text-align:center; }  
+</style>  
+</head>  
+<body>  
+<div class="container">  
+    <h2>دخول المساعد</h2>  
+    <div id="error" class="error"></div>  
+    <div id="success" class="success"></div>  
 
-    <label>ادخل كود التطبيق (App ID):</label>
-    <input type="text" id="appIdInput" placeholder="مثال: 12345">
+    <label>ادخل كود التطبيق (App ID):</label>  
+    <input type="text" id="appIdInput" placeholder="مثال: 12345">  
 
-    <button id="loginBtn">تسجيل الدخول</button>
-</div>
+    <button id="loginBtn">تسجيل الدخول</button>  
+</div>  
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+<script type="module">  
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";  
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";  
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
-  authDomain: "tourguideapp-313c1.firebaseapp.com",
-  databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",
-  projectId: "tourguideapp-313c1",
-  storageBucket: "tourguideapp-313c1.appspot.com",
-  messagingSenderId: "1036127588385",
-  appId: "1:1036127588385:web:d144dba8f70fe094395360"
-};
+const firebaseConfig = {  
+  apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",  
+  authDomain: "tourguideapp-313c1.firebaseapp.com",  
+  databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",  
+  projectId: "tourguideapp-313c1",  
+  storageBucket: "tourguideapp-313c1.appspot.com",  
+  messagingSenderId: "1036127588385",  
+  appId: "1:1036127588385:web:d144dba8f70fe094395360"  
+};  
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);  
+const db = getDatabase(app);  
 
-document.getElementById('loginBtn').addEventListener('click', async () => {
-    // 1. استخدام حقل الإدخال الجديد باسم appIdInput
-    const appId = document.getElementById("appIdInput").value.trim(); 
-    const errorBox = document.getElementById("error");
-    const successBox = document.getElementById("success");
+document.getElementById('loginBtn').addEventListener('click', async () => {  
+    const appId = document.getElementById("appIdInput").value.trim();   
+    const errorBox = document.getElementById("error");  
+    const successBox = document.getElementById("success");  
 
-    errorBox.style.display = "none";
-    successBox.style.display = "none";
+    errorBox.style.display = "none";  
+    successBox.style.display = "none";  
 
-    if (!appId) { errorBox.innerText="من فضلك اكتب كود التطبيق (App ID)."; errorBox.style.display="block"; return; }
+    if (!appId) { 
+        errorBox.innerText="من فضلك اكتب كود التطبيق (App ID)."; 
+        errorBox.style.display="block"; 
+        return; 
+    }  
 
-    try {
-        const assistantsSnapshot = await get(ref(db, 'assistants'));
-        if (!assistantsSnapshot.exists()) throw new Error("لا يوجد مساعدون مسجلون.");
-        const assistantsData = assistantsSnapshot.val();
+    try {  
+        // نجيب كل البيانات من الجذر
+        const snapshot = await get(ref(db, '/'));  
+        if (!snapshot.exists()) throw new Error("لا يوجد مساعدون مسجلون.");  
+        const dbData = snapshot.val();  
 
-        // دمج كل المساعدين في قائمة واحدة
+        // دمج كل المساعدين حسب المسارات الفعلية
         const allAssistants = [].concat(
-            Object.values(assistantsData.guides||{}),
-            Object.values(assistantsData.companions||{}),
-            Object.values(assistantsData.drivers||{})
-        );
+            Object.values(dbData.assistants_guides || {}),  
+            Object.values(dbData.assistants_companions || {}),  
+            Object.values(dbData.assistants_drivers || {})  
+        );  
 
-        // 2. البحث عن المساعد باستخدام a.appId
-        const found = allAssistants.find(a => a.appId === appId); 
-        
-        if (!found) { 
-            errorBox.innerText="كود التطبيق (App ID) غير صحيح."; 
-            errorBox.style.display="block"; 
-            return; 
-        }
+        // البحث عن المساعد باستخدام appId
+        const found = allAssistants.find(a => a.appId === appId);   
 
-        successBox.innerText="تم تسجيل الدخول بنجاح!";
-        successBox.style.display="block";
+        if (!found) {   
+            errorBox.innerText="كود التطبيق (App ID) غير صحيح.";   
+            errorBox.style.display="block";   
+            return;   
+        }  
 
-        const name = encodeURIComponent(found.name || "مساعد");
-        
-        // 3. التوجيه إلى صفحة الشات باستخدام appId
-        setTimeout(() => { 
-            // نستخدم appId كـ 'code' للصفحة التالية، ونضيف name ونعلم الصفحة بأنها للمساعد (showClear=1)
-            window.location.href = `chat_page.html?code=${appId}&name=${name}&showClear=1`; 
-        }, 600);
-    } catch (err) {
-        errorBox.innerText = "❌ حدث خطأ: " + err.message;
-        errorBox.style.display = "block";
-    }
-});
-</script>
-</body>
+        successBox.innerText="تم تسجيل الدخول بنجاح!";  
+        successBox.style.display="block";  
+
+        const name = encodeURIComponent(found.name || "مساعد");  
+
+        // التوجيه إلى صفحة الشات
+        setTimeout(() => {   
+            window.location.href = `chat_page.html?code=${appId}&name=${name}&showClear=1`;   
+        }, 600);  
+
+    } catch (err) {  
+        errorBox.innerText = "❌ حدث خطأ: " + err.message;  
+        errorBox.style.display = "block";  
+    }  
+});  
+</script>  
+</body>  
 </html>
