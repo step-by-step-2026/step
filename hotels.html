@@ -132,7 +132,7 @@ async function getComments(placeId) {
 
 // حفظ طلب حجز جديد
 async function saveOrderFirebase(placeId, orderData) {
-    const ordersRef = ref(db, `bookings/${placeId}`);
+    const ordersRef = ref(db, `bookings/${placeId}/${code}`);
     const newOrderRef = push(ordersRef);
     await set(newOrderRef, orderData);
 }
