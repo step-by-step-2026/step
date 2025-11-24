@@ -79,7 +79,6 @@ body { font-family: Arial, sans-serif; background-color:#121212; color:var(--whi
     .requests-table tr { display:block; margin-bottom:10px; border-bottom:1px solid #333; }
     .requests-table td { display:flex; justify-content:space-between; padding:8px 6px; }
 }
-
 </style>
 </head>
 <body>
@@ -92,10 +91,8 @@ body { font-family: Arial, sans-serif; background-color:#121212; color:var(--whi
 <div class="container">
     <h1>مراجعة طلبات التوظيف 📝</h1>
 
-    <!-- بوكس المسجات -->
     <div id="messageBox"></div>
 
-    <!-- ⭐ تمت الإضافة — شريط التحميل الأعلى -->
     <div id="loadingBarWrapper" aria-hidden="true">
         <div id="loadingBar"></div>
         <div id="loadingBarText">0%</div>
@@ -124,7 +121,6 @@ body { font-family: Arial, sans-serif; background-color:#121212; color:var(--whi
     </div>
 </div>
 
-<!-- مودال عرض الملفات -->
 <div id="filesModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
     <div style="background-color: var(--dark-bg); padding:20px; border-radius:10px; max-width:90%; max-height:90%; overflow:auto; position:relative;">
         <button id="closeFilesModalBtn" style="position:absolute; top:10px; right:10px; padding:5px 10px; cursor:pointer;">❌ إغلاق</button>
@@ -137,7 +133,6 @@ body { font-family: Arial, sans-serif; background-color:#121212; color:var(--whi
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
 import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
-/* ------ Firebase config (كما في الكود المرسل) ------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
   authDomain: "tourguideapp-313c1.firebaseapp.com",
@@ -152,9 +147,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 let currentTab = 'review';
-let currentApplications = [];
 
-/* ------------------------ شريط التحميل المتقدم ------------------------ */
+/* Loader و المسجات */
 const loadingWrapper = document.getElementById('loadingBarWrapper');
 const loadingBar = document.getElementById('loadingBar');
 const loadingText = document.getElementById('loadingBarText');
@@ -162,9 +156,7 @@ const loadingText = document.getElementById('loadingBarText');
 function showLoader() {
     loadingWrapper.style.display = 'block';
     setLoading(0);
-    // يقوم بتحريك الشريط تدريجياً إلى 10% بسرعة حتى تظهر حركة أثناء انتظار الاستجابة
     setTimeout(()=> setLoading(10), 50);
-    // safety fallback: إذا حصل تأخير طويل، نزيد تدريجياً حتى 90% لكن لا نكمل 100% إلا بعد finish()
     let fallbackValue = 10;
     const fallback = setInterval(()=>{
         fallbackValue = Math.min(90, fallbackValue + 6);
@@ -180,23 +172,16 @@ function showLoader() {
         set(p){ setLoading(p); }
     };
 }
-
-function setLoading(percent){
-    loadingBar.style.width = percent + '%';
-    loadingText.textContent = percent + '%';
-}
-
-/* ---------------------- دوال المسجات ----------------------- */
+function setLoading(percent){ loadingBar.style.width = percent + '%'; loadingText.textContent = percent + '%'; }
 function showMessage(message, type='info', duration=3000){
     const box = document.getElementById('messageBox');
     box.textContent = message;
     box.className = '';
     box.classList.add(type);
     box.style.display = 'block';
-    if (duration > 0) setTimeout(()=>{ box.style.display = 'none'; }, duration);
+    if(duration>0) setTimeout(()=>{ box.style.display='none'; }, duration);
 }
 
-/* ---------------------- تحويل الحالة لبادج ----------------------- */
 function getStatusPill(status) {
     if (!status) return `<span class="status-pill">${status}</span>`;
     if (status.includes('قيد المراجعة')) return `<span class="status-pill review">${status}</span>`;
@@ -206,7 +191,6 @@ function getStatusPill(status) {
     return `<span class="status-pill">${status}</span>`;
 }
 
-/* ---------------------- فلترة التبويبات ----------------------- */
 function filterRequests(apps) {
     if (currentTab === 'review') return apps.filter(a => (a.status || '').trim() === 'قيد المراجعة');
     if (currentTab === 'accepted') return apps.filter(a => (a.status || '').trim() === 'تم القبول');
@@ -217,7 +201,7 @@ function filterRequests(apps) {
     return [];
 }
 
-/* ---------------------- عرض الملفات ----------------------- */
+/* ---------------------- عرض الملفات مع زر فتح PDF للسيرة الذاتية ----------------------- */
 function viewFiles(app){
     const container = document.getElementById("filesContainer");
     container.innerHTML = '';
@@ -254,80 +238,82 @@ function viewFiles(app){
                 label.style.fontWeight='bold';
                 label.style.marginBottom='5px';
 
-                const img=document.createElement('img');
-                img.src=fileData;
-                img.style.width='100%';
-                img.style.border='1px solid #ccc';
-                img.style.borderRadius='6px';
-                img.style.objectFit='cover';
+                if(key==='cv'){
+                    // إذا كانت السيرة الذاتية، نعرض زر لفتح PDF بدل الصورة
+                    const btn = document.createElement('button');
+                    btn.textContent='📄 فتح السيرة الذاتية';
+                    btn.style.padding='8px 12px';
+                    btn.style.borderRadius='6px';
+                    btn.style.backgroundColor='var(--blue-royal)';
+                    btn.style.color='#fff';
+                    btn.style.cursor='pointer';
+                    btn.onclick=()=>window.open(fileData,"_blank");
+                    div.appendChild(label);
+                    div.appendChild(btn);
+                } else {
+                    const img=document.createElement('img');
+                    img.src=fileData;
+                    img.style.width='100%';
+                    img.style.border='1px solid #ccc';
+                    img.style.borderRadius='6px';
+                    img.style.objectFit='cover';
+                    div.appendChild(label);
+                    div.appendChild(img);
+                }
 
-                div.appendChild(label);
-                div.appendChild(img);
                 container.appendChild(div);
             });
         } catch(e){
-            // تجاهل أي خطأ في هيكلة الملفات
             console.warn('file render error', e);
         }
     }
+
     document.getElementById("filesModal").style.display="flex";
 }
 
-/* ---------------------- بناء الجدول بسرعة مع تقدم واضح ----------------------- */
+/* ---------------------- بناء الجدول ----------------------- */
 async function displayRequests() {
     const loader = showLoader();
 
     try {
-        // جلب البيانات من Firebase
         const snapshot = await get(ref(db, 'jobApplications'));
         const data = snapshot.val() || {};
-
-        // هيكلة البيانات كقائمة
         const entries = Object.entries(data).map(([appKey, value])=> ({ appKey, ...value }));
-
-        // ابتداءً نفلتر حسب التبويب
         const filtered = filterRequests(entries);
 
-        // تحديث تدريجي للنسبة أثناء بناء الجدول
         const tbody = document.getElementById('requestsTableBody');
         const noRequestsMessage = document.getElementById('noRequestsMessage');
         tbody.innerHTML = '';
 
         if(filtered.length === 0){
             noRequestsMessage.style.display = 'block';
-            // نضمن انتهاء التحميل
             loader.finish();
             return;
         }
         noRequestsMessage.style.display = 'none';
 
-        // عدد عناصر البناء لو حصل توقف نضمن اكتمال الشريط
         const total = filtered.length;
         let processed = 0;
-
-        // نبدأ من 10% ثم نصعد تدريجياً حتى 90% بناءً على التقدم
         loader.set(10);
 
         filtered.forEach(app => {
             const tr = document.createElement('tr');
 
             tr.innerHTML = `
-                <td>رقم الطلب :       ${app.id || '-'}</td>
-                <td>اسم المتقدم :  ${app.fullName || '-'}</td>
-                <td> الوظيفه:       ${app.roleKey || app.role || '-'}</td>
-                <td>حاله الطلب :   ${getStatusPill(app.status)}</td>
+                <td>رقم الطلب : ${app.id || '-'}</td>
+                <td>اسم المتقدم : ${app.fullName || '-'}</td>
+                <td> الوظيفه: ${app.roleKey || app.role || '-'}</td>
+                <td>حاله الطلب : ${getStatusPill(app.status)}</td>
             `;
 
             const tdActions = document.createElement('td');
 
-            // عرض الملفات
             const viewBtn=document.createElement('button');
             viewBtn.className='btn-sm';
             viewBtn.style.backgroundColor='var(--blue-royal)';
             viewBtn.textContent='📂 عرض الملفات';
             viewBtn.onclick=()=>viewFiles(app);
 
-            // قبول
             const acceptBtn=document.createElement('button');
             acceptBtn.className='btn-sm';
             acceptBtn.style.backgroundColor='var(--green-success)';
@@ -341,7 +327,6 @@ async function displayRequests() {
                 }
             };
 
-            // رفض
             const rejectBtn=document.createElement('button');
             rejectBtn.className='btn-sm';
             rejectBtn.style.backgroundColor='var(--red-emergency)';
@@ -355,7 +340,6 @@ async function displayRequests() {
                 }
             };
 
-            // حذف
             const deleteBtn=document.createElement('button');
             deleteBtn.className='btn-sm';
             deleteBtn.style.backgroundColor='#555';
@@ -369,7 +353,6 @@ async function displayRequests() {
                 }
             };
 
-            // ترتيب الأزرار كما في النسخة الأصلية: قبول، رفض، حذف، عرض ملفات (لو قيد المراجعة)
             if((app.status || '').trim() === 'قيد المراجعة'){
                 tdActions.append(acceptBtn, rejectBtn, deleteBtn, viewBtn);
             } else {
@@ -379,19 +362,16 @@ async function displayRequests() {
             tr.appendChild(tdActions);
             tbody.appendChild(tr);
 
-            // تحديث التقدم
             processed++;
             const percent = Math.min(90, 10 + Math.floor((processed / total) * 80));
             loader.set(percent);
         });
 
-        // بعد إكمال بناء الجدول، نكمل الشريط إلى 100% بشكل ناعم
         setTimeout(()=> loader.finish(), 180);
 
     } catch (err) {
         console.error('displayRequests error', err);
         showMessage('حدث خطأ أثناء جلب البيانات. افتح الكونسول للمزيد.', 'error', 5000);
-        // ضمان إغلاق الشريط حتى لو خطأ
         setTimeout(()=> { try { loadingBar.style.width = '100%'; loadingText.textContent = '100%'; loadingWrapper.style.display = 'none'; } catch(e){} }, 300);
     }
 }
@@ -409,12 +389,10 @@ document.querySelectorAll('.tab-button').forEach(btn=>{
     };
 });
 
-/* ---------------------- بداية التشغيل ----------------------- */
 document.addEventListener('DOMContentLoaded',()=>{
     displayRequests();
     setInterval(displayRequests,60000);
 });
-
 </script>
 </body>
 </html>
