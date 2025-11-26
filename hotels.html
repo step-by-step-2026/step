@@ -32,7 +32,7 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
 .card-content button.directions { background-color: #128c7e; color: #fff; margin-bottom:5px; }
 .card-content button.commentsBtn { background-color:#ff9800; color:#fff; margin-bottom:5px; }
 .rating { color: #ffd700; font-size: 16px; margin-bottom: 5px; }
-
+.btn-back {background-color:var(--blue-royal); color:var(--white); padding:8px 15px; border-radius:6px; text-decoration:none; font-size:0.9em; transition:background-color 0.3s; border:none; cursor:pointer; margin-left:10px;}
 .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
 .modal-content { background-color: #1e1e1e; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; position: relative; color:#e0e0e0; }
 .modal-content h3 { margin-top:0; }
@@ -51,8 +51,9 @@ body { font-family: Arial, sans-serif; background-color: #121212; color:#e0e0e0;
 <body>
 <div class="container2" style="max-width:600px;">
 <h1>الفنادق 🏨</h1>
+<a href="main_services.html" class="btn-back">🏠 الرئيسية</a>
 <div class="container" id="cardsContainer"></div>
-
+    
 <!-- نموذج الحجز -->
 <div class="modal" id="orderModal">
     <div class="modal-content">
